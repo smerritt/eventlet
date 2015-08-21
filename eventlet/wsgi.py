@@ -596,17 +596,24 @@ class HttpProtocol(BaseHTTPServer.BaseHTTPRequestHandler):
             # (b"\xe2\x98\x83"), we end up here with a unicode object that's
             # got 3 codepoints: u"\u00e2\u0098\u0083". This allows us to
             # recover the original bytes by re-encoding using iso-8859-1.
+            #
+            # Note that the value we end up with has had whitespace stripped
+            # from it. This is because, on Python 2, raw_v still has any
+            # leading and trailing whitespace that was on the wire. However,
+            # on Python 3, that whitespace has already been removed. For
+            # cross-Python-version consistency, we use the stripped value.
             if six.PY3:
-                raw_k = raw_k.encode("iso-8859-1")
-                # not raw_v; leading and trailing whitespace is not part of
-                # the value
-                raw_v = v.encode("iso-8859-1")
-
-            raw_envk = b'RAWHTTP_' + raw_k
-            if raw_envk in env:
-                env[raw_envk] += b',' + raw_v
+                raw_bytes_k = raw_k.encode("iso-8859-1")
+                raw_bytes_v = v.encode("iso-8859-1")
             else:
-                env[raw_envk] = v
+                raw_bytes_k = raw_k
+                raw_bytes_v = v
+
+            raw_envk = b'RAWHTTP_' + raw_bytes_k
+            if raw_envk in env:
+                env[raw_envk] += b',' + raw_bytes_v
+            else:
+                env[raw_envk] = raw_bytes_v
 
         if env.get('HTTP_EXPECT') == '100-continue':
             wfile = self.wfile

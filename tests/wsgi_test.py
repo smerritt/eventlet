@@ -1266,17 +1266,18 @@ class TestHttpd(_TestBase):
         fd.write(b'GET / HTTP/1.1\r\n'
                  b'Host: localhost\r\n'
                  b'Connection: close\r\n'
-                 b'Unicode-Snowman:   \xe2\x98\x83 \r\n'
-                 b'Mixes-Dashes_And-Underscores: yes\r\n'
+                 b'Unicode-Snowmen: \xe2\x98\x83\r\n'
+                 b'Unicode-Snowmen: \xe2\x9b\x84\r\n'
+                 b'x-amz-meta-sts_image_version: 17\r\n'
                  b'MIXed-CasE: 1\r\n'
                  b'\r\n')
         fd.flush()
         fd.read()
 
-        self.assertEqual(got_env[b'RAWHTTP_Unicode-Snowman'],
-                         b'\xe2\x98\x83')
-        self.assertEqual(got_env[b'RAWHTTP_Mixes-Dashes_And-Underscores'],
-                         b'yes')
+        self.assertEqual(got_env[b'RAWHTTP_Unicode-Snowmen'],
+                         b'\xe2\x98\x83,\xe2\x9b\x84')
+        self.assertEqual(got_env[b'RAWHTTP_x-amz-meta-sts_image_version'],
+                         b'17')
         self.assertEqual(got_env[b'RAWHTTP_MIXed-CasE'],
                          b'1')
 
