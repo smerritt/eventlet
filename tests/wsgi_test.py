@@ -1249,6 +1249,37 @@ class TestHttpd(_TestBase):
         fd.close()
         self.assertEqual(g[0], 1)
 
+    def test_raw_headers(self):
+        got_env = {}
+
+        def capture_env_app(env, start_response):
+            got_env.update(env)
+
+            start_response('200 OK', [('Content-type', 'text/plain')])
+            yield b""
+
+        self.site.application = capture_env_app
+        sock = eventlet.connect(
+            ('localhost', self.port))
+
+        fd = sock.makefile('rwb')
+        fd.write(b'GET / HTTP/1.1\r\n'
+                 b'Host: localhost\r\n'
+                 b'Connection: close\r\n'
+                 b'Unicode-Snowman:   \xe2\x98\x83 \r\n'
+                 b'Mixes-Dashes_And-Underscores: yes\r\n'
+                 b'MIXed-CasE: 1\r\n'
+                 b'\r\n')
+        fd.flush()
+        fd.read()
+
+        self.assertEqual(got_env[b'RAWHTTP_Unicode-Snowman'],
+                         b'\xe2\x98\x83')
+        self.assertEqual(got_env[b'RAWHTTP_Mixes-Dashes_And-Underscores'],
+                         b'yes')
+        self.assertEqual(got_env[b'RAWHTTP_MIXed-CasE'],
+                         b'1')
+
     def test_zero_length_chunked_response(self):
         def zero_chunked_app(env, start_response):
             start_response('200 OK', [('Content-type', 'text/plain')])
