@@ -124,7 +124,7 @@ from eventlet import timeout
 
 def trampoline(fd, read=None, write=None, timeout=None,
                timeout_exc=timeout.Timeout,
-               mark_as_closed=None):
+               mark_as_closed=None, prevent_multiple_readers=None):
     """Suspend the current coroutine until the given socket object or file
     descriptor is ready to *read*, ready to *write*, or the specified
     *timeout* elapses, depending on arguments specified.
@@ -156,9 +156,11 @@ def trampoline(fd, read=None, write=None, timeout=None,
         t = hub.schedule_call_global(timeout, _timeout, timeout_exc)
     try:
         if read:
-            listener = hub.add(hub.READ, fileno, current.switch, current.throw, mark_as_closed)
+            listener = hub.add(hub.READ, fileno, current.switch, current.throw, mark_as_closed,
+                               prevent_multiple_readers)
         elif write:
-            listener = hub.add(hub.WRITE, fileno, current.switch, current.throw, mark_as_closed)
+            listener = hub.add(hub.WRITE, fileno, current.switch, current.throw, mark_as_closed,
+                               prevent_multiple_readers)
         try:
             return hub.switch()
         finally:

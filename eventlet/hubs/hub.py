@@ -145,7 +145,8 @@ class BaseHub(object):
             signal.signal(signal.SIGALRM, self._old_signal_handler)
         signal.alarm(0)
 
-    def add(self, evtype, fileno, cb, tb, mark_as_closed):
+    def add(self, evtype, fileno, cb, tb, mark_as_closed,
+            prevent_multiple_readers):
         """ Signals an intent to or write a particular file descriptor.
 
         The *evtype* argument is either the constant READ or WRITE.
@@ -161,11 +162,17 @@ class BaseHub(object):
         The *mark_as_closed* is used in the context of the event hub to
         prepare a Python object as being closed, pre-empting further
         close operations from accidentally shutting down the wrong OS thread.
+
+        The *prevent_multiple_readers* argument is used to check for the
+        presence of greenthreads already waiting on fileno.
         """
+        if prevent_multiple_readers is None:
+            prevent_multiple_readers = g_prevent_multiple_readers
+
         listener = self.lclass(evtype, fileno, cb, tb, mark_as_closed)
         bucket = self.listeners[evtype]
         if fileno in bucket:
-            if g_prevent_multiple_readers:
+            if prevent_multiple_readers:
                 raise RuntimeError(
                     "Second simultaneous %s on fileno %s "
                     "detected.  Unless you really know what you're doing, "
@@ -173,7 +180,9 @@ class BaseHub(object):
                     "particular socket.  Consider using a pools.Pool. "
                     "If you do know what you're doing and want to disable "
                     "this error, call "
-                    "eventlet.debug.hub_prevent_multiple_readers(False) - MY THREAD=%s; "
+                    "eventlet.debug.hub_prevent_multiple_readers(False), or "
+                    "call trampoline() or add() with "
+                    "prevent_multiple_readers=False - MY THREAD=%s; "
                     "THAT THREAD=%s" % (
                         evtype, fileno, evtype, cb, bucket[fileno]))
             # store off the second listener in another structure

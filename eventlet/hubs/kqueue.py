@@ -46,8 +46,8 @@ class Hub(BaseHub):
                 return self.kqueue.control(events, max_events, timeout)
             raise
 
-    def add(self, evtype, fileno, cb, tb, mac):
-        listener = super(Hub, self).add(evtype, fileno, cb, tb, mac)
+    def add(self, evtype, fileno, cb, tb, mac, pmr):
+        listener = super(Hub, self).add(evtype, fileno, cb, tb, mac, pmr)
         events = self._events.setdefault(fileno, {})
         if evtype not in events:
             try:

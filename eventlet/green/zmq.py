@@ -247,7 +247,8 @@ class Socket(_Socket):
                                                       self.getsockopt(FD),
                                                       event,
                                                       lambda _: None,
-                                                      lambda: None)
+                                                      lambda: None,
+                                                      None)
         self.__dict__['_eventlet_clock'] = hub.clock
 
     @_wraps(_Socket.close)
